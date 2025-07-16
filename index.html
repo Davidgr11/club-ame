@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Jugadores Club América</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    #lista-jugadores {
+      list-style: none;
+      padding: 0;
+    }
+    #lista-jugadores li {
+      background: #f9f9f9;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 3px;
+      border-left: 4px solid #4CAF50;
+    }
+    .admin-link {
+      display: block;
+      text-align: center;
+      margin-top: 30px;
+      color: #666;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .admin-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>Jugadores Club América</h1>
+  <ul id="lista-jugadores"></ul>
+  
+  <a href="admin.html" class="admin-link">Acceder al panel de administración</a>
+  
+  <script src="build/scripts/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Admin Functions</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .test-section {
+      background: #f5f5f5;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+    .result {
+      background: #e8f5e8;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 3px;
+      border-left: 4px solid #4CAF50;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .error {
+      background: #ffeeee;
+      border-left-color: #f44336;
+    }
+    button {
+      background: #2196F3;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 3px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #1976D2;
+    }
+  </style>
+</head>
+<body>
+  <h1>Test Admin Functions</h1>
+  
+  <div class="test-section">
+    <h2>Test 1: Verificar endpoint GET</h2>
+    <button onclick="testGetJugadores()">Test GET /get-jugadores</button>
+    <div id="get-result" class="result"></div>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 2: Verificar con fetch detallado</h2>
+    <button onclick="testGetDetailed()">Test GET Detallado</button>
+    <div id="detailed-result" class="result"></div>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 3: Verificar headers y CORS</h2>
+    <button onclick="testCORS()">Test CORS</button>
+    <div id="cors-result" class="result"></div>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 4: Probar endpoint directo en nueva ventana</h2>
+    <button onclick="openDirectEndpoint()">Abrir endpoint directo</button>
+    <small>Esto abrirá el endpoint en una nueva ventana para ver la respuesta directa</small>
+  </div>
+  
+  <script>
+    function log(id, message, isError = false) {
+      const element = document.getElementById(id);
+      const timestamp = new Date().toLocaleTimeString();
+      const formatted = `[${timestamp}] ${message}`;
+      
+      if (element) {
+        element.textContent += formatted + '\n';
+        element.className = `result ${isError ? 'error' : ''}`;
+        element.scrollTop = element.scrollHeight;
+      }
+      
+      console.log(formatted);
+    }
+    
+    async function testGetJugadores() {
+      const resultId = 'get-result';
+      document.getElementById(resultId).textContent = '';
+      log(resultId, 'Iniciando test GET...');
+      
+      try {
+        const response = await fetch('/.netlify/functions/get-jugadores');
+        log(resultId, `Status: ${response.status} ${response.statusText}`);
+        log(resultId, `Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}`);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          log(resultId, `Error response: ${errorText}`, true);
+          return;
+        }
+        
+        const data = await response.json();
+        log(resultId, `Success! Data received:`);
+        log(resultId, JSON.stringify(data, null, 2));
+        log(resultId, `Data type: ${typeof data}`);
+        log(resultId, `Is array: ${Array.isArray(data)}`);
+        log(resultId, `Length: ${Array.isArray(data) ? data.length : 'N/A'}`);
+        
+      } catch (error) {
+        log(resultId, `Fetch error: ${error.message}`, true);
+        log(resultId, `Error stack: ${error.stack}`, true);
+      }
+    }
+    
+    async function testGetDetailed() {
+      const resultId = 'detailed-result';
+      document.getElementById(resultId).textContent = '';
+      log(resultId, 'Iniciando test detallado...');
+      
+      // Información del entorno
+      log(resultId, `URL actual: ${window.location.href}`);
+      log(resultId, `Origin: ${window.location.origin}`);
+      
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+        
+        log(resultId, 'Realizando fetch con timeout de 30s...');
+        
+        const response = await fetch('/.netlify/functions/get-jugadores', {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        log(resultId, `✓ Respuesta recibida: ${response.status}`);
+        log(resultId, `✓ Response OK: ${response.ok}`);
+        log(resultId, `✓ Content-Type: ${response.headers.get('content-type')}`);
+        log(resultId, `✓ CORS Origin: ${response.headers.get('access-control-allow-origin')}`);
+        
+        const text = await response.text();
+        log(resultId, `✓ Response text length: ${text.length}`);
+        log(resultId, `✓ Response text preview: ${text.substring(0, 200)}...`);
+        
+        try {
+          const data = JSON.parse(text);
+          log(resultId, `✓ JSON parsed successfully`);
+          log(resultId, `✓ Data: ${JSON.stringify(data, null, 2)}`);
+        } catch (jsonError) {
+          log(resultId, `✗ JSON parse error: ${jsonError.message}`, true);
+          log(resultId, `✗ Raw text: ${text}`, true);
+        }
+        
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          log(resultId, '✗ Request timeout (30s)', true);
+        } else {
+          log(resultId, `✗ Error: ${error.message}`, true);
+        }
+      }
+    }
+    
+    async function testCORS() {
+      const resultId = 'cors-result';
+      document.getElementById(resultId).textContent = '';
+      log(resultId, 'Probando CORS...');
+      
+      try {
+        // Probar OPTIONS request
+        const optionsResponse = await fetch('/.netlify/functions/get-jugadores', {
+          method: 'OPTIONS'
+        });
+        
+        log(resultId, `OPTIONS Status: ${optionsResponse.status}`);
+        log(resultId, `CORS Headers:`);
+        optionsResponse.headers.forEach((value, key) => {
+          if (key.toLowerCase().includes('access-control')) {
+            log(resultId, `  ${key}: ${value}`);
+          }
+        });
+        
+        // Probar GET con headers personalizados
+        const getResponse = await fetch('/.netlify/functions/get-jugadores', {
+          method: 'GET',
+          headers: {
+            'X-Custom-Header': 'test',
+            'Accept': 'application/json'
+          }
+        });
+        
+        log(resultId, `GET with custom headers Status: ${getResponse.status}`);
+        
+      } catch (error) {
+        log(resultId, `CORS test error: ${error.message}`, true);
+      }
+    }
+    
+    function openDirectEndpoint() {
+      const url = `${window.location.origin}/.netlify/functions/get-jugadores`;
+      window.open(url, '_blank');
+      console.log('Opened endpoint:', url);
+    }
+  </script>
+</body>
+</html>

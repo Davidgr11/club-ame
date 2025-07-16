@@ -1,5 +1,5 @@
 let jugadores = [];
-let esAdmin = true;
+let esAdmin = window.esAdmin || false;
 
 console.log('App iniciado. esAdmin:', esAdmin);
 
